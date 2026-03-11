@@ -1,6 +1,5 @@
 const express = require("express")
 const { spawn } = require("child_process")
-const path = require("path")
 
 const app = express()
 
@@ -18,7 +17,7 @@ const ytdlp = spawn("python3",[
 "-m",
 "yt_dlp",
 "-f",
-"mp4",
+"bv*+ba/b",
 "-o",
 "-",
 url
@@ -30,12 +29,13 @@ res.setHeader("Content-Type","application/octet-stream")
 ytdlp.stdout.pipe(res)
 
 ytdlp.stderr.on("data",(data)=>{
-console.log("yt-dlp error:",data.toString())
+console.log(data.toString())
 })
 
-ytdlp.on("error",(err)=>{
-console.log("Spawn error:",err)
-res.end("Download failed")
+ytdlp.on("close",(code)=>{
+if(code!==0){
+console.log("Download failed")
+}
 })
 
 })
@@ -43,5 +43,5 @@ res.end("Download failed")
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT,()=>{
-console.log("Cosmic server running on port",PORT)
+console.log("Cosmic running on",PORT)
 })
