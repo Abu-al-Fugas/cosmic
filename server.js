@@ -1,5 +1,5 @@
 const express = require("express")
-const { exec } = require("child_process")
+const { spawn } = require("child_process")
 const path = require("path")
 
 const app = express()
@@ -8,28 +8,40 @@ app.use(express.static(__dirname))
 
 app.get("/download",(req,res)=>{
 
-const url=req.query.url
+const url = req.query.url
 
 if(!url){
-return res.send("No url")
+return res.send("No URL provided")
 }
 
-const cmd=`yt-dlp -f mp4 -o "%(title)s.%(ext)s" ${url}`
+const ytdlp = spawn("python3",[
+"-m",
+"yt_dlp",
+"-f",
+"mp4",
+"-o",
+"-",
+url
+])
 
-exec(cmd,(err,stdout,stderr)=>{
+res.setHeader("Content-Disposition","attachment; filename=video.mp4")
+res.setHeader("Content-Type","application/octet-stream")
 
-if(err){
-return res.send("Error downloading")
-}
+ytdlp.stdout.pipe(res)
 
-res.send("Video downloaded on server")
+ytdlp.stderr.on("data",(data)=>{
+console.log("yt-dlp error:",data.toString())
+})
 
+ytdlp.on("error",(err)=>{
+console.log("Spawn error:",err)
+res.end("Download failed")
 })
 
 })
 
-const PORT=process.env.PORT || 3000
+const PORT = process.env.PORT || 3000
 
 app.listen(PORT,()=>{
-console.log("Cosmic running")
+console.log("Cosmic server running on port",PORT)
 })
