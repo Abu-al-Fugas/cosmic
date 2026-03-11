@@ -86,6 +86,11 @@ p{
   display:none;
 }
 
+#quality-container{
+  margin-top:15px;
+  display:none;
+}
+
 button{
   margin-top:20px;
   padding:12px 35px;
@@ -97,6 +102,10 @@ button{
   cursor:pointer;
   backdrop-filter:blur(10px);
   transition:0.3s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
 }
 
 button:disabled{
@@ -107,6 +116,22 @@ button:disabled{
 button:hover:enabled{
   background:rgba(255,255,255,0.15);
   transform:scale(1.05);
+}
+
+/* спиннер */
+.spinner{
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 0.8s linear infinite;
+  display:none;
+}
+
+@keyframes spin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
 }
 </style>
 </head>
@@ -125,32 +150,47 @@ button:hover:enabled{
 
   <img id="preview" src="" alt="Preview видео">
 
-  <button id="download" disabled>Скачать</button>
+  <div id="quality-container">
+    <label for="quality">Выберите качество: </label>
+    <select id="quality">
+      <option value="360">360p</option>
+      <option value="720" selected>720p</option>
+      <option value="1080">1080p</option>
+    </select>
+  </div>
+
+  <button id="download">
+    Скачать
+    <div class="spinner" id="spinner"></div>
+  </button>
 </div>
 
 <script>
-// --- Кнопки и элементы ---
+// --- элементы ---
 const input = document.getElementById("url");
 const clearBtn = document.getElementById("clear");
 const downloadBtn = document.getElementById("download");
 const preview = document.getElementById("preview");
+const qualityContainer = document.getElementById("quality-container");
+const qualitySelect = document.getElementById("quality");
+const spinner = document.getElementById("spinner");
 
-// --- Функция обновления состояния ---
-function updateUI(){
+// --- показать/скрыть крестик ---
+function updateUI() {
   clearBtn.style.display = input.value ? "block" : "none";
-  downloadBtn.disabled = !input.value;
 }
+input.addEventListener("input", updateUI);
 
-// --- Очистка поля ---
+// --- очистка поля крестиком ---
 clearBtn.addEventListener("click", () => {
   input.value = "";
   updateUI();
   preview.style.display = "none";
+  qualityContainer.style.display = "none";
 });
 
-// --- Превью видео ---
+// --- обработка вставки ссылки ---
 input.addEventListener("input", () => {
-  updateUI();
   const url = input.value;
 
   // YouTube
@@ -158,32 +198,48 @@ input.addEventListener("input", () => {
   if(ytMatch){
     preview.src = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
     preview.style.display = "block";
+    qualityContainer.style.display = "block";
     return;
   }
 
   // Instagram
   const igMatch = url.match(/instagram\.com\/p\/([\w-]+)/);
   if(igMatch){
-    preview.src = `https://instagram.frix5-1.fna.fbcdn.net/v/t51.2885-15/0.jpg?&_nc_ht=instagram.frix5-1.fna.fbcdn.net`; 
-    // простое заглушка, Instagram не отдаёт прямой thumbnail без API
-    preview.style.display = "block";
+    preview.style.display = "none";
+    qualityContainer.style.display = "none";
     return;
   }
 
   preview.style.display = "none";
+  qualityContainer.style.display = "none";
 });
 
-// --- Скачать видео ---
+// --- скачать видео с анимацией ---
 downloadBtn.addEventListener("click", () => {
   const url = input.value;
   if(!url) return;
-  window.location = "/download?url=" + encodeURIComponent(url);
-  input.value = "";
-  updateUI();
-  preview.style.display = "none";
+
+  // показать спиннер и заблокировать кнопку
+  spinner.style.display = "inline-block";
+  downloadBtn.disabled = true;
+
+  const selectedQuality = qualitySelect.value;
+  const downloadUrl = `/download?url=${encodeURIComponent(url)}&quality=${selectedQuality}`;
+
+  // создаём временный iframe для скачивания, чтобы страница не перезагружалась
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = downloadUrl;
+  document.body.appendChild(iframe);
+
+  // скрыть спиннер через 3 секунды (или можно удалить после завершения скачивания)
+  setTimeout(()=>{
+    spinner.style.display = "none";
+    downloadBtn.disabled = false;
+    document.body.removeChild(iframe);
+  },3000);
 });
 
-// --- Инициализация UI ---
 updateUI();
 
 // --- Космический фон ---
