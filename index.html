@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Cosmic</title>
+
+<style>
+
+html,body{
+margin:0;
+padding:0;
+overflow:hidden;
+background:black;
+font-family:Arial,Helvetica,sans-serif;
+color:white;
+height:100%;
+}
+
+#space{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:0;
+}
+
+.content{
+position:relative;
+z-index:2;
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+text-align:center;
+}
+
+h1{
+font-size:70px;
+letter-spacing:6px;
+margin:0;
+background:linear-gradient(90deg,#fff,#9adfff);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+p{
+opacity:0.7;
+margin-top:10px;
+}
+
+input{
+margin-top:25px;
+padding:12px;
+width:420px;
+border-radius:30px;
+border:1px solid rgba(255,255,255,0.2);
+background:rgba(255,255,255,0.05);
+color:white;
+font-size:16px;
+outline:none;
+text-align:center;
+}
+
+button{
+margin-top:20px;
+padding:12px 35px;
+border-radius:30px;
+border:1px solid rgba(255,255,255,0.2);
+background:rgba(255,255,255,0.05);
+color:white;
+font-size:16px;
+cursor:pointer;
+backdrop-filter:blur(10px);
+transition:0.3s;
+}
+
+button:hover{
+background:rgba(255,255,255,0.15);
+transform:scale(1.05);
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="space"></canvas>
+
+<div class="content">
+<h1>Cosmic</h1>
+<p>Скачать видео по ссылке</p>
+
+<input id="url" placeholder="Вставьте ссылку">
+
+<button onclick="download()">Скачать</button>
+
+</div>
+
+<script>
+
+async function download(){
+
+let url=document.getElementById("url").value
+
+if(!url){
+alert("Вставьте ссылку")
+return
+}
+
+window.location="/download?url="+encodeURIComponent(url)
+
+}
+
+const canvas=document.getElementById("space")
+const ctx=canvas.getContext("2d")
+
+let stars=[]
+let meteors=[]
+let lastMeteor=0
+
+function resize(){
+canvas.width=window.innerWidth
+canvas.height=window.innerHeight
+}
+
+window.addEventListener("resize",resize)
+resize()
+
+class Star{
+constructor(){
+this.x=Math.random()*canvas.width
+this.y=Math.random()*canvas.height
+this.size=Math.random()*2
+this.alpha=Math.random()
+this.speed=Math.random()*0.02
+}
+
+update(){
+this.alpha+=this.speed
+if(this.alpha>1||this.alpha<0){
+this.speed=-this.speed
+}
+}
+
+draw(){
+ctx.beginPath()
+ctx.arc(this.x,this.y,this.size,0,Math.PI*2)
+ctx.fillStyle="rgba(255,255,255,"+this.alpha+")"
+ctx.fill()
+}
+}
+
+class Meteor{
+constructor(){
+this.x=Math.random()*canvas.width
+this.y=-50
+this.len=Math.random()*80+50
+this.speed=Math.random()*8+6
+this.angle=Math.PI/4
+this.alpha=1
+}
+
+update(){
+this.x+=this.speed
+this.y+=this.speed
+this.alpha-=0.01
+}
+
+draw(){
+ctx.beginPath()
+ctx.moveTo(this.x,this.y)
+ctx.lineTo(
+this.x-Math.cos(this.angle)*this.len,
+this.y-Math.sin(this.angle)*this.len
+)
+ctx.strokeStyle="rgba(255,255,255,"+this.alpha+")"
+ctx.lineWidth=2
+ctx.stroke()
+}
+}
+
+for(let i=0;i<400;i++){
+stars.push(new Star())
+}
+
+function spawnMeteor(){
+
+let now=Date.now()
+
+if(now-lastMeteor>4000 && Math.random()<0.004){
+meteors.push(new Meteor())
+lastMeteor=now
+}
+
+}
+
+function animate(){
+
+ctx.fillStyle="rgba(0,0,0,0.4)"
+ctx.fillRect(0,0,canvas.width,canvas.height)
+
+stars.forEach(s=>{
+s.update()
+s.draw()
+})
+
+spawnMeteor()
+
+meteors.forEach((m,i)=>{
+m.update()
+m.draw()
+
+if(m.alpha<=0){
+meteors.splice(i,1)
+}
+})
+
+requestAnimationFrame(animate)
+}
+
+animate()
+
+</script>
+
+</body>
+</html>
